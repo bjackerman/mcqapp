@@ -1,133 +1,107 @@
 # MCQ Study App
 
-A lightweight, web-based study platform built with SvelteKit for practicing multiple-choice questions. Filter questions by topic, track your performance, and focus on your weakest areas.
+A SvelteKit multiple-choice study app for FBLA-style practice. The current build is still deployable as a static front end, but the code and product surface have been refactored toward the new requirements in `docs/new-project-requirements.md`: validated question data, deterministic resumable sessions, guest/local progress as a cache, and clear future integration points for MongoDB Atlas, secure member accounts, subscriptions, and payments.
 
-## Features
+## Current Feature Set
 
-### v2 (Current)
+### Quiz workflow
 
-#### Core Quiz Loop
-- Single-question view (one question at a time)
-- Four-option MCQ format with A/B/C/D labels
-- Submit → Explanation → Next Question state machine
-- Correct/incorrect highlighting (green/red with badges)
-- Full explanation reveal after every answer
-- Session score counter (Score: X / Y) with progress indicator
-- "Quit" button returns to filter screen
-- "Resume" in-progress sessions from filter screen
-- Keyboard shortcuts: 1-4 select option, Enter submit/advance
+- One question at a time with A/B/C/D answer labels.
+- Explicit state machine: select an answer, submit, review the explanation, continue.
+- Correct and selected-incorrect answer highlighting after submission.
+- Score, current position, progress bar, quit flow, and completion summary.
+- Keyboard shortcuts: `1`-`4` choose an option, `Enter` submits/continues, and `Space` continues after review.
 
-#### Tag Filtering
-- Search bar for filtering topics by name
-- Topic grouping (Accounting, Finance, Technology, Management, etc.)
-- Individual tag selection with question counts
-- Group-level Toggle buttons (select/clear entire category)
-- Select All / Clear All global controls
-- Min-questions input to enforce minimum pool size
-- Visual chip UI for tag selection (toggle pills)
+### Topic filtering and practice modes
 
-#### Practice Modes
-- **Normal Mode**: Sequential or random from filtered pool
-- **Mistake Mode**: Practice only questions you've gotten wrong before
-- **Resume**: Continue an interrupted session (localStorage persisted)
+- Topic filters use the canonical 44-topic taxonomy supplied for the production catalog.
+- Question tags, including legacy year-suffixed tags, are normalized into canonical filter topics.
+- Topics are grouped into taxonomy categories such as Accounting, Business, Communication, Economics, Finance, Leadership, Management, Marketing, Operations, Personal Development, and Technology.
+- Search, individual topic toggles, group toggles, select-all, and clear-all controls.
+- Normal practice and mistake practice modes.
+- First-class shuffle option that generates and stores one stable question order per session.
+- Question cap options: 10, 20, 50, all, or custom.
+- Empty-state and minimum-pool validation before a quiz can start.
 
-#### Session Persistence
-- localStorage-based session resume (active quiz, score, position)
-- Per-question statistics (seen count, correct count)
-- "Practice Mistakes" button on summary screen
-- "Reset Stats" button on filter screen (clears all history)
+### Persistence and data quality
 
-#### Data
-- 7,392 FBLA quiz questions with explanations
-- 50+ topics grouped by category
-- Static JSON data (no backend required)
+- Guest sessions persist locally under a versioned localStorage key.
+- Saved sessions include selected tags, ordered question IDs, current index, score, mode, shuffle/cap settings, schema version, and dataset version.
+- Local session data is validated and stale/corrupt sessions are discarded gracefully.
+- Per-question local stats track seen, correct, incorrect, and last answered time.
+- Recent completed session summaries are retained locally.
+- Question data is validated in development/CI with `npm run validate`.
 
-### Out of Scope (v1 Scope Boundaries Met)
-- No user authentication
-- No backend database (static JSON)
-- No spaced repetition algorithms (random/sequential)
+### Member-platform readiness
 
-## Tech Stack
+The UI now explicitly separates guest local progress from future member capabilities. The intended backend layer should provide:
 
-- **Framework**: SvelteKit v4 + Svelte v4
-- **Adapter**: Static (adapter-static) — deployable to GitHub Pages
-- **UI**: Material Design-inspired custom CSS (no heavy component lib)
-- **Data**: 7.4K FBLA MCQs as bundled JSON
-- **Deployment**: GitHub Pages (single-page app with index.html fallback)
+- Registration, login, logout, email verification, and password reset.
+- MongoDB Atlas persistence for users, subscriptions, attempts, progress history, bookmarks, and completed sessions.
+- Subscription-gated study areas enforced server-side.
+- Payment-provider checkout and webhook handling for entitlement changes.
+- Account-level export and deletion flows separate from local guest reset.
 
-## Local Development
+## Question data
+
+The bundled seed dataset currently contains 50 validated sample questions in `src/lib/data/questions.json`. The app no longer claims a larger bundled bank than is actually present. Production imports must follow the per-record JSON Schema in `src/lib/data/question.schema.json` and use one of the canonical topics from `src/lib/data/taxonomy.js` for each tag:
+
+```json
+{
+  "id": "stable unique string or number",
+  "question": "non-empty prompt",
+  "options": ["A", "B", "C", "D"],
+  "correct": 0,
+  "explanation": "non-empty explanation",
+  "tags": ["TOPIC_2026"]
+}
+```
+
+## Tech stack
+
+- SvelteKit 2 and Svelte 4
+- Vite 5
+- Static adapter for GitHub Pages/static hosting compatibility
+- JSON seed data with a validation script
+
+## Local development
 
 ```bash
-cd /home/bjack/mcqapp-v2
 npm install
-npm run dev     # dev server
-npm run build   # static build in build/
-npm run preview # preview production build
+npm run validate
+npm run build
+npm run dev
 ```
 
-## Deployment (GitHub Pages)
+## Project structure
 
-1. Push repo to GitHub
-2. Go to Settings → Pages → Build from GitHub Actions
-3. Add workflow file `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [main]
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/deploy-pages@v4
-        with:
-          path: build
+```text
+src/
+  app.html
+  routes/
+    +layout.svelte      # Global app shell styles
+    +page.svelte        # Quiz setup, quiz, summary, and roadmap UI
+  lib/
+    data/
+      questions.json    # Bundled seed questions
+      question.schema.json # Machine-readable schema for each question record
+      questions.js      # Validation, grouping, filtering, ordering helpers
+      taxonomy.js       # Canonical production topic filters and catalog counts
+      tags.js           # Compatibility re-export layer
+    stores/
+      session.js        # Versioned local session/progress persistence
+docs/
+  question-record-schema.md
+scripts/
+  validate-questions.mjs
 ```
 
-Or manually: `git subtree push --prefix build origin gh-pages`
+## Deployment
 
-## File Structure
+The app still builds to static output:
 
-```
-mcqapp-v2/
-  src/
-    app.html              # HTML shell
-    routes/
-      +layout.svelte      # Global styles
-      +page.svelte        # All screens (filter/quiz/summary)
-    lib/
-      data/
-        questions.json    # 7,392 FBLA questions
-        tags.js           # Tag grouping & filtering logic
-      stores/
-        session.js        # localStorage-backed session state
-  static/
-    favicon.svg
-    .nojekyll            # Disable Jekyll processing on GitHub Pages
-  build/                  # Static output (deployable)
-  svelte.config.js        # SvelteKit + adapter-static config
-  vite.config.js
-  package.json
+```bash
+npm run build
 ```
 
-## Recommendations for v2.5+
-
-- **Shuffle mode**: Randomize question order
-- **Question count cap**: Limit session to N questions (e.g., 10, 20, 50)
-- **Bookmark/favorite questions**
-- **Leaderboard** (local only or basic serverless)
-- **Import custom question sets** (drag-drop JSON)
-- **Dark mode toggle**
-- **Accessibility**: ARIA labels, keyboard nav focus rings, reduced-motion
-- **PWA**: Service worker + manifest for offline use
-
-## License
-
-MIT — Data sourced from FBLA competition materials.
+The generated site is written to `build/` by `@sveltejs/adapter-static` and can be deployed to GitHub Pages or another static host. Backend-backed member features should be added as API/server integrations before privileged content, payment state, or account data is trusted.

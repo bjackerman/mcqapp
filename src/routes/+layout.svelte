@@ -3,9 +3,23 @@
 <style>
   :global(body) {
     margin: 0;
-    padding: 0;
-    font-family: 'Roboto', sans-serif;
-    background-color: #fafafa;
-    color: rgba(0, 0, 0, 0.87);
+    min-width: 320px;
+    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(15, 91, 215, 0.16), transparent 34rem),
+      linear-gradient(180deg, #f4f8ff 0%, #eef3fb 45%, #f8fafc 100%);
+    color: #172033;
+  }
+
+  :global(button),
+  :global(input),
+  :global(select) {
+    font: inherit;
+  }
+
+  :global(:focus-visible) {
+    outline: 3px solid rgba(15, 91, 215, 0.38);
+    outline-offset: 3px;
   }
 </style>
