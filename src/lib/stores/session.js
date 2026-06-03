@@ -1,8 +1,8 @@
 import { DATASET_VERSION, getQuestionsByIds } from '$lib/data/questions.js';
 
-export const STORAGE_KEY = 'mcq_session_v3';
-export const LEGACY_STORAGE_KEY = 'mcq_session';
-export const SESSION_SCHEMA_VERSION = 3;
+export const STORAGE_KEY = 'mcq_session_v4';
+export const LEGACY_STORAGE_KEYS = ['mcq_session_v3', 'mcq_session'];
+export const SESSION_SCHEMA_VERSION = 4;
 
 const DEFAULT_SESSION = {
   schemaVersion: SESSION_SCHEMA_VERSION,
@@ -19,7 +19,8 @@ const DEFAULT_SESSION = {
   cap: 'all',
   customCap: 10,
   lastAnsweredId: null,
-  completedSessions: []
+  completedSessions: [],
+  bookmarkedIds: []
 };
 
 export let session = createInitialSession();
@@ -32,6 +33,21 @@ export function persistSession() {
 export function clearPersistedSession() {
   Object.assign(session, createDefaultSession());
   persistSession();
+}
+
+export function isBookmarked(questionId, currentSession = session) {
+  return currentSession.bookmarkedIds.includes(String(questionId));
+}
+
+export function toggleBookmark(questionId) {
+  const id = String(questionId);
+  const bookmarkedIds = isBookmarked(id)
+    ? session.bookmarkedIds.filter((bookmarkedId) => bookmarkedId !== id)
+    : [id, ...session.bookmarkedIds];
+
+  Object.assign(session, { bookmarkedIds });
+  persistSession();
+  return isBookmarked(id);
 }
 
 export function hasResumeableSession(currentSession = session) {
@@ -125,7 +141,11 @@ function createInitialSession() {
   const migrated = normalizeSession(stored);
 
   if (!migrated || migrated.datasetVersion !== DATASET_VERSION) {
-    return createDefaultSession({ stats: migrated?.stats || {}, completedSessions: migrated?.completedSessions || [] });
+    return createDefaultSession({
+      stats: migrated?.stats || {},
+      completedSessions: migrated?.completedSessions || [],
+      bookmarkedIds: migrated?.bookmarkedIds || []
+    });
   }
 
   return migrated;
@@ -134,7 +154,7 @@ function createInitialSession() {
 function readStoredSession() {
   if (!isBrowser()) return null;
 
-  for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY]) {
+  for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
     const raw = localStorage.getItem(key);
     if (!raw) continue;
 
@@ -158,7 +178,11 @@ function normalizeSession(value) {
       : [];
 
   const stats = normalizeStats(value.stats);
-  const normalized = createDefaultSession({ stats, completedSessions: Array.isArray(value.completedSessions) ? value.completedSessions : [] });
+  const normalized = createDefaultSession({
+    stats,
+    completedSessions: Array.isArray(value.completedSessions) ? value.completedSessions : [],
+    bookmarkedIds: normalizeBookmarkedIds(value.bookmarkedIds)
+  });
 
   Object.assign(normalized, {
     schemaVersion: SESSION_SCHEMA_VERSION,
@@ -169,7 +193,7 @@ function normalizeSession(value) {
     currentIndex: clampInteger(value.currentIndex, 0, Math.max(questionOrder.length - 1, 0)),
     scoreCorrect: clampInteger(value.scoreCorrect, 0, questionOrder.length),
     scoreAnswered: clampInteger(value.scoreAnswered, 0, questionOrder.length),
-    mode: value.mode === 'mistakes' || value.mistakeMode ? 'mistakes' : 'practice',
+    mode: normalizeMode(value.mode, value.mistakeMode),
     shuffle: Boolean(value.shuffle),
     cap: value.cap || 'all',
     customCap: clampInteger(value.customCap, 1, 500),
@@ -183,6 +207,19 @@ function normalizeSession(value) {
   }
 
   return normalized;
+}
+
+function normalizeBookmarkedIds(ids) {
+  if (!Array.isArray(ids)) return [];
+
+  const validIds = new Set(getQuestionsByIds(ids.map(String)).map((question) => question.id));
+  return [...new Set(ids.map(String).filter((id) => validIds.has(id)))];
+}
+
+function normalizeMode(mode, legacyMistakeMode = false) {
+  if (mode === 'mistakes' || legacyMistakeMode) return 'mistakes';
+  if (mode === 'bookmarks') return 'bookmarks';
+  return 'practice';
 }
 
 function normalizeStats(stats) {
@@ -213,6 +250,7 @@ function createDefaultSession(overrides = {}) {
     questionOrder: [],
     stats: {},
     completedSessions: [],
+    bookmarkedIds: [],
     ...overrides
   };
 }
