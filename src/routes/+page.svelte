@@ -13,7 +13,6 @@
     advanceQuestion,
     clearPersistedSession,
     completeSession,
-    createGuestDataExport,
     hasResumeableSession,
     quitActiveSession,
     isBookmarked,
@@ -193,18 +192,6 @@
     loadCurrentQuestion();
   }
 
-  function exportLocalData() {
-    const payload = createGuestDataExport();
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mcq-guest-progress-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    validationMessage = 'Downloaded a JSON export of local guest progress for this device.';
-  }
-
   function resetStats() {
     if (!confirm('Clear local progress, active session, and recent summaries on this device?')) return;
     clearPersistedSession();
@@ -250,13 +237,9 @@
     return '';
   }
 
-  function isEditableShortcutTarget(target) {
-    return target instanceof HTMLElement && Boolean(target.closest('input, select, textarea, [contenteditable="true"]'));
-  }
-
   function onKey(event) {
     const target = event.target;
-    if (isEditableShortcutTarget(target)) return;
+    if (target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
     if (screen !== 'quiz') return;
 
     if (phase === 'selecting') {
@@ -316,7 +299,6 @@
               <option value="dark">Dark</option>
             </select>
           </label>
-          <button class="button ghost" type="button" on:click={exportLocalData}>Export local data</button>
           <button class="button ghost" type="button" on:click={resetStats}>Reset local stats</button>
         </div>
       </div>
@@ -486,8 +468,6 @@
               class:correct={phase === 'answered' && index === currentQuestion.correct}
               class:wrong={phase === 'answered' && selectedOption === index && index !== currentQuestion.correct}
               disabled={phase === 'answered'}
-              aria-pressed={selectedOption === index}
-              aria-describedby={phase === 'answered' ? 'answer-explanation' : undefined}
               on:click={() => selectOption(index)}
             >
               <span class="option-letter">{OPTION_LABELS[index]}</span>
@@ -497,7 +477,7 @@
         </div>
 
         {#if phase === 'answered'}
-          <aside id="answer-explanation" class="explanation" class:correct={selectedOption === currentQuestion.correct} aria-live="polite">
+          <aside class="explanation" class:correct={selectedOption === currentQuestion.correct}>
             <strong>{selectedOption === currentQuestion.correct ? 'Correct' : 'Not quite'}</strong>
             <p>{currentQuestion.explanation}</p>
           </aside>
