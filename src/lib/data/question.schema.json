@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcqstudy.app/schemas/question-record.schema.json",
+  "title": "MCQ Question Record",
+  "description": "Schema for one multiple-choice question record in src/lib/data/questions.json or imported question sets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "question", "options", "correct", "explanation", "tags"],
+  "properties": {
+    "id": {
+      "description": "Stable unique identifier. Prefer a namespaced string for production imports; existing numeric seed IDs are supported for compatibility.",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "integer" }
+      ]
+    },
+    "question": {
+      "description": "Question prompt shown to the learner.",
+      "type": "string",
+      "minLength": 1
+    },
+    "options": {
+      "description": "Exactly four answer choices displayed as A/B/C/D in array order.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "correct": {
+      "description": "Zero-based index into options. 0 = A, 1 = B, 2 = C, 3 = D.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "explanation": {
+      "description": "Answer explanation shown after submission.",
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "description": "One or more canonical topic labels/IDs from taxonomy.js, or legacy aliases explicitly mapped there.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "examples": [
+    {
+      "id": "networking-001",
+      "question": "Which HTTP status code indicates a successful GET request?",
+      "options": ["200 OK", "404 Not Found", "500 Internal Server Error", "301 Moved Permanently"],
+      "correct": 0,
+      "explanation": "HTTP 200 OK means the request succeeded and the response contains the requested data.",
+      "tags": ["Network Infrastructure"]
+    }
+  ]
+}

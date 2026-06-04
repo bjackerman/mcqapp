@@ -1,4 +1,5 @@
 import rawQuestions from '$lib/data/questions.json';
+import questionRecordSchema from './question.schema.json';
 import {
   CANONICAL_TOPICS,
   getCanonicalTopicIds,
@@ -9,7 +10,8 @@ import {
 
 export const DATASET_VERSION = '2026.06.static-seed';
 export const OPTION_LABELS = ['A', 'B', 'C', 'D'];
-export const QUESTION_SCHEMA_DESCRIPTION = 'id, question, exactly four options, zero-based correct index, explanation, and one or more canonical topic tags';
+export const QUESTION_RECORD_SCHEMA = questionRecordSchema;
+export const QUESTION_SCHEMA_DESCRIPTION = questionRecordSchema.description;
 
 const VALIDATION_ERRORS = validateQuestions(rawQuestions);
 
@@ -133,6 +135,7 @@ function seededRandom(seed) {
 function validateQuestions(questions) {
   const errors = [];
   const ids = new Set();
+  const allowedFields = new Set(Object.keys(QUESTION_RECORD_SCHEMA.properties));
 
   if (!Array.isArray(questions)) {
     return ['Question data must be an array.'];
@@ -141,19 +144,38 @@ function validateQuestions(questions) {
   questions.forEach((question, index) => {
     const prefix = `Question at index ${index}`;
 
+    if (!question || typeof question !== 'object' || Array.isArray(question)) {
+      errors.push(`${prefix} must be an object record.`);
+      return;
+    }
+
+    for (const key of Object.keys(question)) {
+      if (!allowedFields.has(key)) {
+        errors.push(`${prefix} has unsupported field "${key}".`);
+      }
+    }
+
+    for (const key of QUESTION_RECORD_SCHEMA.required) {
+      if (!(key in question)) {
+        errors.push(`${prefix} is missing required field "${key}".`);
+      }
+    }
+
     if (question?.id == null || String(question.id).trim() === '') {
       errors.push(`${prefix} is missing a stable id.`);
+    } else if (typeof question.id !== 'string' && !Number.isInteger(question.id)) {
+      errors.push(`${prefix} id must be a non-empty string or integer.`);
     } else if (ids.has(String(question.id))) {
       errors.push(`${prefix} has duplicate id ${question.id}.`);
     } else {
       ids.add(String(question.id));
     }
 
-    if (!question?.question || typeof question.question !== 'string') {
+    if (!question?.question || typeof question.question !== 'string' || question.question.trim() === '') {
       errors.push(`${prefix} has empty question text.`);
     }
 
-    if (!Array.isArray(question?.options) || question.options.length !== 4 || question.options.some((option) => !option || typeof option !== 'string')) {
+    if (!Array.isArray(question?.options) || question.options.length !== 4 || question.options.some((option) => !option || typeof option !== 'string' || option.trim() === '')) {
       errors.push(`${prefix} must have exactly four non-empty options.`);
     }
 
@@ -161,13 +183,18 @@ function validateQuestions(questions) {
       errors.push(`${prefix} has an invalid zero-based correct answer index.`);
     }
 
-    if (!question?.explanation || typeof question.explanation !== 'string') {
+    if (!question?.explanation || typeof question.explanation !== 'string' || question.explanation.trim() === '') {
       errors.push(`${prefix} has empty explanation text.`);
     }
 
-    if (!Array.isArray(question?.tags) || question.tags.length === 0 || question.tags.some((tag) => !tag || typeof tag !== 'string')) {
+    if (!Array.isArray(question?.tags) || question.tags.length === 0 || question.tags.some((tag) => !tag || typeof tag !== 'string' || tag.trim() === '')) {
       errors.push(`${prefix} must have one or more non-empty tags.`);
     } else {
+      const uniqueTags = new Set(question.tags);
+      if (uniqueTags.size !== question.tags.length) {
+        errors.push(`${prefix} has duplicate tags.`);
+      }
+
       for (const tag of question.tags) {
         if (!isKnownTopicTag(tag)) {
           errors.push(`${prefix} has unknown topic tag "${tag}". Add it to the canonical taxonomy before using it.`);

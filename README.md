@@ -51,7 +51,7 @@ The UI now explicitly separates guest local progress from future member capabili
 
 ## Question data
 
-The bundled seed dataset currently contains 50 validated sample questions in `src/lib/data/questions.json`. The app no longer claims a larger bundled bank than is actually present. Production imports should preserve this schema and use one of the canonical topics from `src/lib/data/taxonomy.js` for each tag:
+The bundled seed dataset currently contains 50 validated sample questions in `src/lib/data/questions.json`. The app no longer claims a larger bundled bank than is actually present. Production imports must follow the per-record JSON Schema in `src/lib/data/question.schema.json` and use one of the canonical topics from `src/lib/data/taxonomy.js` for each tag:
 
 ```json
 {
@@ -91,12 +91,14 @@ src/
   lib/
     data/
       questions.json    # Bundled seed questions
+      question.schema.json # Machine-readable schema for each question record
       questions.js      # Validation, grouping, filtering, ordering helpers
       taxonomy.js       # Canonical production topic filters and catalog counts
       tags.js           # Compatibility re-export layer
     stores/
-      session.js        # Versioned local session/progress/bookmark persistence
-      preferences.js    # Persisted theme preference and system theme resolution
+      session.js        # Versioned local session/progress persistence
+docs/
+  question-record-schema.md
 scripts/
   validate-questions.mjs
 ```
