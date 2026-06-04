@@ -32,6 +32,7 @@ A SvelteKit multiple-choice study app for FBLA-style practice. The current build
 - Bookmarked question IDs persist locally so guest users can build focused review sets.
 - Recent completed session summaries are retained locally.
 - Question data is validated in development/CI with `npm run validate`.
+- Guest progress can be exported as JSON from the setup screen before resetting local device data.
 
 ### Polish and preferences
 
@@ -76,6 +77,7 @@ The bundled seed dataset currently contains 50 validated sample questions in `sr
 ```bash
 npm install
 npm run validate
+npm run prod:test
 npm run build
 npm run dev
 ```
@@ -111,4 +113,4 @@ The app still builds to static output:
 npm run build
 ```
 
-The generated site is written to `build/` by `@sveltejs/adapter-static` and can be deployed to GitHub Pages or another static host. Backend-backed member features should be added as API/server integrations before privileged content, payment state, or account data is trusted.
+The generated site is written to `build/` by `@sveltejs/adapter-static` and can be deployed to GitHub Pages or another static host. Run `npm run prod:test` before the first production test; it validates question data, runs Svelte diagnostics, builds the static site, verifies expected generated assets, and checks built text assets for obvious secret patterns. Backend-backed member features should be added as API/server integrations before privileged content, payment state, or account data is trusted.
