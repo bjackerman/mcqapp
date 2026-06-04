@@ -22,9 +22,9 @@ This tracker converts `docs/new-project-requirements.md` into implementation sta
 | Subscription/payments | Not started | Roadmap messaging only. | Plan model, entitlement rules, checkout, provider adapter, webhooks, server verification, and subscription records are not implemented. | M4: paid access |
 | MongoDB Atlas | Not started | README and roadmap identify intended backend role. | No database connection, collections, indexes, repositories, tenant isolation, backup/restore plan, migrations, or member progress sync. | M3/M4: backend data layer |
 | Secure backend/API deployment | Not started | Static deployment still works and docs warn that privileged data cannot live in the browser. | Need hosting decision, server runtime, environment variables, HTTPS/domain setup, API deployment docs, payment callback support, and CI/CD. | M2/M3: platform decision |
-| Bookmarks/favorites | Not started | None. | Bookmark data model, local/member persistence, UI controls, and bookmark review mode. | M5: study enhancements |
+| Bookmarks/favorites | Partial | Guest users can bookmark/unbookmark questions during a quiz, bookmarks persist in the versioned local cache, setup shows a bookmarked review mode, and bookmark pools still respect selected topics. | Member-account bookmark sync, export/delete integration, and automated interaction tests are still needed. | M5: study enhancements |
 | Custom question imports | Not started | None. | Import UI, schema validation UX, duplicate handling, and storage/sync rules. | M5: study enhancements |
-| Dark mode | Not started | None. | CSS custom properties, persisted preference, system preference support, and contrast audit. | M5: polish |
+| Dark mode | Partial | Light/dark design tokens are defined with a System/Light/Dark selector, persisted local preference, system preference resolution, and reduced-motion CSS remains in place. | Needs formal contrast audit, screen-reader pass, and automated preference tests. | M5: polish |
 | PWA/offline | Not started | None. | Manifest, service worker, offline strategy, and protected-content cache invalidation rules. | M5: polish |
 
 ## Recommended milestones
@@ -82,9 +82,9 @@ Goal: add lower-risk product improvements after core security and persistence ar
 
 Required completion checks:
 
-- Bookmark/favorite questions and add bookmark review mode.
+- Bookmark/favorite questions and add bookmark review mode. Guest/local support is implemented; member sync remains.
 - Add custom JSON question-set import with schema validation UX.
-- Add dark mode using CSS custom properties and persisted/system preference support.
+- Add dark mode using CSS custom properties and persisted/system preference support. Initial guest preference support is implemented; audit/tests remain.
 - Add PWA manifest/service worker only after confirming protected subscriber data cannot be cached past entitlement expiration.
 
 ## How to track to completion

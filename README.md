@@ -18,7 +18,7 @@ A SvelteKit multiple-choice study app for FBLA-style practice. The current build
 - Question tags, including legacy year-suffixed tags, are normalized into canonical filter topics.
 - Topics are grouped into taxonomy categories such as Accounting, Business, Communication, Economics, Finance, Leadership, Management, Marketing, Operations, Personal Development, and Technology.
 - Search, individual topic toggles, group toggles, select-all, and clear-all controls.
-- Normal practice and mistake practice modes.
+- Normal practice, mistake practice, and locally bookmarked review modes.
 - First-class shuffle option that generates and stores one stable question order per session.
 - Question cap options: 10, 20, 50, all, or custom.
 - Empty-state and minimum-pool validation before a quiz can start.
@@ -29,8 +29,15 @@ A SvelteKit multiple-choice study app for FBLA-style practice. The current build
 - Saved sessions include selected tags, ordered question IDs, current index, score, mode, shuffle/cap settings, schema version, and dataset version.
 - Local session data is validated and stale/corrupt sessions are discarded gracefully.
 - Per-question local stats track seen, correct, incorrect, and last answered time.
+- Bookmarked question IDs persist locally so guest users can build focused review sets.
 - Recent completed session summaries are retained locally.
 - Question data is validated in development/CI with `npm run validate`.
+
+### Polish and preferences
+
+- System, light, and dark theme preferences use CSS custom properties.
+- Theme choice persists locally while the System option follows `prefers-color-scheme`.
+- Motion-sensitive users keep the reduced-motion transition overrides.
 
 ### Member-platform readiness
 
@@ -80,7 +87,7 @@ src/
   app.html
   routes/
     +layout.svelte      # Global app shell styles
-    +page.svelte        # Quiz setup, quiz, summary, and roadmap UI
+    +page.svelte        # Quiz setup, bookmark review, theme controls, quiz, summary, and roadmap UI
   lib/
     data/
       questions.json    # Bundled seed questions
