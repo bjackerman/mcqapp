@@ -35,30 +35,6 @@ export function clearPersistedSession() {
   persistSession();
 }
 
-export function createGuestDataExport(currentSession = session) {
-  return {
-    exportSchemaVersion: 1,
-    exportedAt: new Date().toISOString(),
-    datasetVersion: DATASET_VERSION,
-    sessionSchemaVersion: SESSION_SCHEMA_VERSION,
-    selectedTags: [...currentSession.selectedTags],
-    stats: structuredCloneSafe(currentSession.stats),
-    bookmarkedIds: [...currentSession.bookmarkedIds],
-    completedSessions: currentSession.completedSessions.map((completed) => ({ ...completed })),
-    activeSession: currentSession.active ? {
-      mode: currentSession.mode,
-      shuffle: currentSession.shuffle,
-      cap: currentSession.cap,
-      customCap: currentSession.customCap,
-      questionOrder: [...currentSession.questionOrder],
-      currentIndex: currentSession.currentIndex,
-      scoreCorrect: currentSession.scoreCorrect,
-      scoreAnswered: currentSession.scoreAnswered,
-      lastAnsweredId: currentSession.lastAnsweredId
-    } : null
-  };
-}
-
 export function isBookmarked(questionId, currentSession = session) {
   return currentSession.bookmarkedIds.includes(String(questionId));
 }
@@ -287,11 +263,6 @@ function clampInteger(value, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return min;
   return Math.min(Math.max(Math.floor(parsed), min), max);
-}
-
-function structuredCloneSafe(value) {
-  if (globalThis.structuredClone) return globalThis.structuredClone(value);
-  return JSON.parse(JSON.stringify(value));
 }
 
 function cryptoSafeId() {
