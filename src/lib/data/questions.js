@@ -68,13 +68,15 @@ export function getGroupedTags() {
   }));
 }
 
-export function filterQuestions({ tags = [], mistakesOnly = false, stats = {} } = {}) {
+export function filterQuestions({ tags = [], mistakesOnly = false, bookmarksOnly = false, stats = {}, bookmarkedIds = [] } = {}) {
   const selected = new Set(tags);
+  const bookmarks = new Set(bookmarkedIds.map(String));
 
   return allQuestions.filter((question) => {
     const matchesTopic = selected.size > 0 && question.baseTags.some((tag) => selected.has(tag));
     if (!matchesTopic) return false;
 
+    if (bookmarksOnly && !bookmarks.has(question.id)) return false;
     if (!mistakesOnly) return true;
 
     const stat = stats[question.id];
