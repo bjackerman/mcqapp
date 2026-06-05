@@ -1,114 +1,63 @@
 # MCQ Study App
 
-A SvelteKit multiple-choice study app for FBLA-style practice. The current build is still deployable as a static front end, but the code and product surface have been refactored toward the new requirements in `docs/new-project-requirements.md`: validated question data, deterministic resumable sessions, guest/local progress as a cache, and clear future integration points for MongoDB Atlas, secure member accounts, subscriptions, and payments.
+A modular SvelteKit multiple-choice study app for FBLA-style practice. Built with a "Static-First" architecture that is architecturally prepared for future MongoDB Atlas and secure member integration.
 
-## Current Feature Set
+## Key Features
 
-### Quiz workflow
+- **Focused Quiz Workflow**: One question at a time with A/B/C/D labels, immediate feedback, and detailed explanations.
+- **Topic Filtering**: Canonical 44-topic taxonomy with category grouping and search.
+- **Practice Modes**: Normal practice, mistake-focused review, and bookmarked questions.
+- **Deterministic Sessions**: One stable, resumable question order per session (shuffled or sequential).
+- **Architecture v3**: Decoupled UI components and an adapter-based storage layer for future-proof persistence.
 
-- One question at a time with A/B/C/D answer labels.
-- Explicit state machine: select an answer, submit, review the explanation, continue.
-- Correct and selected-incorrect answer highlighting after submission.
-- Score, current position, progress bar, quit flow, and completion summary.
-- Keyboard shortcuts: `1`-`4` choose an option, `Enter` submits/continues, and `Space` continues after review.
+## Tech Stack
 
-### Topic filtering and practice modes
+- **SvelteKit 2 / Svelte 4**
+- **Vite 5**
+- **@sveltejs/adapter-static**: For high-performance static hosting (GitHub Pages).
+- **JSON Schema**: Strict validation for question data integrity.
 
-- Topic filters use the canonical 44-topic taxonomy supplied for the production catalog.
-- Question tags, including legacy year-suffixed tags, are normalized into canonical filter topics.
-- Topics are grouped into taxonomy categories such as Accounting, Business, Communication, Economics, Finance, Leadership, Management, Marketing, Operations, Personal Development, and Technology.
-- Search, individual topic toggles, group toggles, select-all, and clear-all controls.
-- Normal practice, mistake practice, and locally bookmarked review modes.
-- First-class shuffle option that generates and stores one stable question order per session.
-- Question cap options: 10, 20, 50, all, or custom.
-- Empty-state and minimum-pool validation before a quiz can start.
-
-### Persistence and data quality
-
-- Guest sessions persist locally under a versioned localStorage key.
-- Saved sessions include selected tags, ordered question IDs, current index, score, mode, shuffle/cap settings, schema version, and dataset version.
-- Local session data is validated and stale/corrupt sessions are discarded gracefully.
-- Per-question local stats track seen, correct, incorrect, and last answered time.
-- Bookmarked question IDs persist locally so guest users can build focused review sets.
-- Recent completed session summaries are retained locally.
-- Question data is validated in development/CI with `npm run validate`.
-
-### Polish and preferences
-
-- System, light, and dark theme preferences use CSS custom properties.
-- Theme choice persists locally while the System option follows `prefers-color-scheme`.
-- Motion-sensitive users keep the reduced-motion transition overrides.
-
-### Member-platform readiness
-
-The UI now explicitly separates guest local progress from future member capabilities. The intended backend layer should provide:
-
-- Registration, login, logout, email verification, and password reset.
-- MongoDB Atlas persistence for users, subscriptions, attempts, progress history, bookmarks, and completed sessions.
-- Subscription-gated study areas enforced server-side.
-- Payment-provider checkout and webhook handling for entitlement changes.
-- Account-level export and deletion flows separate from local guest reset.
-
-## Question data
-
-The bundled seed dataset currently contains 50 validated sample questions in `src/lib/data/questions.json`. The app no longer claims a larger bundled bank than is actually present. Production imports must follow the per-record JSON Schema in `src/lib/data/question.schema.json` and use one of the canonical topics from `src/lib/data/taxonomy.js` for each tag:
-
-```json
-{
-  "id": "stable unique string or number",
-  "question": "non-empty prompt",
-  "options": ["A", "B", "C", "D"],
-  "correct": 0,
-  "explanation": "non-empty explanation",
-  "tags": ["TOPIC_2026"]
-}
-```
-
-## Tech stack
-
-- SvelteKit 2 and Svelte 4
-- Vite 5
-- Static adapter for GitHub Pages/static hosting compatibility
-- JSON seed data with a validation script
-
-## Local development
+## Local Development
 
 ```bash
+# Install dependencies
 npm install
+
+# Validate question data
 npm run validate
-npm run build
+
+# Run in development mode
 npm run dev
+
+# Build for production
+npm run build
 ```
 
-## Project structure
+## Project Structure
 
 ```text
 src/
-  app.html
-  routes/
-    +layout.svelte      # Global app shell styles
-    +page.svelte        # Quiz setup, bookmark review, theme controls, quiz, summary, and roadmap UI
   lib/
-    data/
-      questions.json    # Bundled seed questions
-      question.schema.json # Machine-readable schema for each question record
-      questions.js      # Validation, grouping, filtering, ordering helpers
-      taxonomy.js       # Canonical production topic filters and catalog counts
-      tags.js           # Compatibility re-export layer
-    stores/
-      session.js        # Versioned local session/progress persistence
-docs/
-  question-record-schema.md
+    components/      # Atomic UI views (Filter, Quiz, Summary)
+    data/            # Questions, taxonomy, and validation logic
+    storage/         # Persistence adapters (LocalStorage, future Cloud)
+    stores/          # Svelte stores for session and preferences
+  routes/
+    +page.svelte      # Main entry point (View orchestrator)
 scripts/
-  validate-questions.mjs
+  validate-questions.mjs # Data integrity check
+docs/
+  new-project-requirements.md # Full product specification
 ```
 
-## Deployment
+## Question Data
 
-The app still builds to static output:
+Add or update questions in `src/lib/data/questions.json`. Each record must follow the schema in `src/lib/data/question.schema.json`. Run `npm run validate` after any changes to ensure the build remains stable.
 
-```bash
-npm run build
-```
+## Roadmap
 
-The generated site is written to `build/` by `@sveltejs/adapter-static` and can be deployed to GitHub Pages or another static host. Backend-backed member features should be added as API/server integrations before privileged content, payment state, or account data is trusted.
+The app is currently in **Phase 2** of the architectural roadmap:
+1. [x] **Phase 1**: Modularize UI (Split God-component).
+2. [x] **Phase 2**: Storage Abstraction (Adapter Pattern).
+3. [ ] **Phase 3**: Member Authentication & MongoDB Atlas Sync.
+4. [ ] **Phase 4**: Subscription Gating & Payment Integration.

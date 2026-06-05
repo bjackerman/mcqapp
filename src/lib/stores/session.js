@@ -1,4 +1,5 @@
 import { DATASET_VERSION, getQuestionsByIds } from '$lib/data/questions.js';
+import { LocalStorageAdapter } from '$lib/storage/LocalStorageAdapter.js';
 
 export const STORAGE_KEY = 'mcq_session_v4';
 export const LEGACY_STORAGE_KEYS = ['mcq_session_v3', 'mcq_session'];
@@ -23,11 +24,21 @@ const DEFAULT_SESSION = {
   bookmarkedIds: []
 };
 
+// Initialize with LocalStorageAdapter by default
+let storageAdapter = new LocalStorageAdapter(STORAGE_KEY, LEGACY_STORAGE_KEYS);
+
+/**
+ * Allows switching the storage backend (e.g., to a CloudAdapter for members).
+ * @param {object} adapter - An object with get() and save(data) methods.
+ */
+export function setStorageAdapter(adapter) {
+  storageAdapter = adapter;
+}
+
 export let session = createInitialSession();
 
 export function persistSession() {
-  if (!isBrowser()) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  storageAdapter.save(session);
 }
 
 export function clearPersistedSession() {
@@ -137,7 +148,7 @@ export function advanceQuestion() {
 }
 
 function createInitialSession() {
-  const stored = readStoredSession();
+  const stored = storageAdapter.get();
   const migrated = normalizeSession(stored);
 
   if (!migrated || migrated.datasetVersion !== DATASET_VERSION) {
@@ -149,23 +160,6 @@ function createInitialSession() {
   }
 
   return migrated;
-}
-
-function readStoredSession() {
-  if (!isBrowser()) return null;
-
-  for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
-    const raw = localStorage.getItem(key);
-    if (!raw) continue;
-
-    try {
-      return JSON.parse(raw);
-    } catch {
-      localStorage.removeItem(key);
-    }
-  }
-
-  return null;
 }
 
 function normalizeSession(value) {
@@ -268,8 +262,4 @@ function clampInteger(value, min, max) {
 function cryptoSafeId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function isBrowser() {
-  return typeof localStorage !== 'undefined';
 }
